@@ -1,63 +1,125 @@
-const ROUTES = ['splash','onboarding','home-map','search','category','filters','venue','venue-roster','profile','line','booking','confirmation'];
-const state = { screen: 'splash', history: [], selected: ['mai', 'ploy'], tab: 'overview', hot: '#ff2fb2' };
+const ROUTES = ['splash','onboarding','home-map','search','search-input','category','filter','venue-overview','venue-roster','venue-reviews','line','my'];
+const state = {
+  ageVerified: false,
+  interests: ['gogo', 'karaoke'],
+  areas: ['Nana'],
+  notifyPrefs: { editorPick: true, nearby: false },
+  currentView: 'splash',
+  history: [],
+  onbStep: 1,
+  savedVenues: ['lotus'],
+  venueTab: 'overview',
+  mapSheetExpanded: false,
+  selectedGirls: new Set(['mai', 'ploy']),
+  lineThread: [
+    { who: 'shop', text: 'Thai Heaven編集部です。店舗へ送る内容を確認してください。' },
+    { who: 'me', text: '店舗: Lotus Noir\n日時: 今夜 22:00\n人数: 2名\n指名: Mai, Ploy\n予算: ฿฿฿\n備考: 日本語スタッフ希望' },
+  ],
+  searchQuery: 'Soi Cow',
+  filters: { area: ['Nana', 'Soi Cowboy'], features: ['日本語OK', '出勤中'], priceRange: '฿฿-฿฿฿', minRating: 4.0 },
+};
+
 const venues = [
-  { name: 'Lotus Noir', type: 'Go-Go Bar', area: 'Nana Plaza', score: '4.8', dist: '0.4 km', tags: ['Open now', 'English OK'] },
-  { name: 'Siam Velvet', type: 'Gentlemen Club', area: 'Thonglor', score: '4.7', dist: '2.1 km', tags: ['Reservation', 'Bottle set'] },
-  { name: 'Mango Muse', type: 'Beer Bar', area: 'Soi Cowboy', score: '4.6', dist: '1.2 km', tags: ['Walk-in', 'Live DJ'] },
+  { id: 'lotus', name: 'Lotus Noir', category: 'Go-Go Bar', area: 'Nana Plaza', rating: 4.6, price: '฿฿฿', girls: 38, tags: ['編集部ピック', '日本語OK', 'LINE可'], hours: '19:00-03:00', budget: '฿2,000〜', barFine: '確認制', pay: 'Cash / Card' },
+  { id: 'velvet', name: 'Siam Velvet', category: 'Member Parlor', area: 'Thonglor', rating: 4.4, price: '฿฿฿฿', girls: 24, tags: ['PR', '送迎相談', '個室'], hours: '20:00-02:00', budget: '฿4,000〜', barFine: '店舗相談', pay: 'Cash' },
+  { id: 'mango', name: 'Mango Muse', category: 'Karaoke', area: 'Soi Cowboy', rating: 4.2, price: '฿฿', girls: 31, tags: ['明朗会計', '初心者向け'], hours: '18:00-02:30', budget: '฿1,500〜', barFine: 'なし', pay: 'Cash / QR' },
 ];
-const roster = [
-  { id: 'mai', name: 'Mai', age: 24, style: 'Playful host', lang: 'TH / EN', rate: 'VIP', accent: '#ff4fd8' },
-  { id: 'ploy', name: 'Ploy', age: 26, style: 'Elegant talker', lang: 'TH / JP', rate: 'Popular', accent: '#ffb000' },
-  { id: 'nana', name: 'Nana', age: 23, style: 'Dance floor', lang: 'TH / EN', rate: 'New', accent: '#28e0ff' },
-  { id: 'fah', name: 'Fah', age: 27, style: 'VIP room', lang: 'TH / CN', rate: 'Top', accent: '#8a5cff' },
+const girls = [
+  { id: 'mai', name: 'Mai', age: 24, height: 158, lang: 'JP/EN', badge: '出勤中', tone: 'v1' },
+  { id: 'ploy', name: 'Ploy', age: 26, height: 162, lang: 'JP/TH', badge: '新人', tone: 'v2' },
+  { id: 'nana', name: 'Nana', age: 23, height: 155, lang: 'EN', badge: '出勤中', tone: 'v3' },
+  { id: 'fah', name: 'Fah', age: 27, height: 164, lang: 'TH', badge: '人気', tone: 'v1' },
+  { id: 'yui', name: 'Yui', age: 22, height: 156, lang: 'JP', badge: '出勤中', tone: 'v2' },
+  { id: 'dao', name: 'Dao', age: 25, height: 160, lang: 'EN/TH', badge: '本日休', tone: 'v3' },
 ];
-const categories = [
-  ['Go-Go', 'High energy stages', '18 venues'], ['Karaoke', 'Private rooms', '12 venues'], ['Clubs', 'Bottle service', '9 venues'],
-  ['Massage', 'After-hours relax', '22 venues'], ['Beer Bars', 'Casual walk-ins', '31 venues'], ['VIP Lounges', 'Discreet premium', '6 venues'],
-];
-const labels = { onboarding: 'Quick setup', 'home-map': 'Bangkok tonight', search: 'Search', category: 'Explore by vibe', filters: 'Filters', venue: 'Lotus Noir', 'venue-roster': 'Choose hosts', profile: 'Host card', line: 'LINE handoff', booking: 'Reserve', confirmation: 'Confirmed' };
+const genreCards = [['gogo','ゴーゴー'], ['massage','マッサージ'], ['parlor','置屋'], ['karaoke','カラオケ'], ['member','メンバーP'], ['club','クラブ']];
+const areaCards = ['Nana', 'Soi Cowboy', 'Thonglor', 'Patpong'];
+const categories = [['ゴーゴーバー', '18件', 'ステージ・短時間'], ['マッサージ', '22件', '深夜リラックス'], ['置屋', '9件', '編集部確認済み'], ['カラオケ', '12件', '個室・団体'], ['メンバーP', '6件', '高級ライン'], ['PR枠', '広告', '店舗プロモーション']];
 
-const icon = (name) => `<span class="ico" aria-hidden="true">${name}</span>`;
-const chosen = () => roster.filter((girl) => state.selected.includes(girl.id));
-const go = (screen) => { state.history.push(state.screen); state.screen = screen; render(); };
-const back = () => { state.screen = state.history.pop() || 'home-map'; render(); };
-const toggle = (id) => { state.selected = state.selected.includes(id) ? state.selected.filter((item) => item !== id) : [...state.selected, id]; render(); };
-const setTab = (tab) => { state.tab = tab; render(); };
-const setHot = (hot) => { state.hot = hot; render(); };
+const app = document.getElementById('app');
+const selectedNames = () => girls.filter((girl) => state.selectedGirls.has(girl.id)).map((girl) => girl.name);
+const route = (view, push = true) => {
+  if (!ROUTES.includes(view)) return toast(`未定義ビュー: ${view}`);
+  if (push) state.history.push(state.currentView);
+  state.currentView = view;
+  state.venueTab = view.replace('venue-', '') || state.venueTab;
+  render();
+};
+const back = () => route(state.history.pop() || 'home-map', false);
+const reset = () => { state.currentView = 'splash'; state.history = []; state.onbStep = 1; state.mapSheetExpanded = false; render(); };
+const toggleIn = (list, value) => list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+const toast = (html) => { const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = html; app.append(el); setTimeout(() => el.remove(), 1900); };
 
-function shell(content) {
-  const topbar = state.screen === 'splash' ? '' : `<header class="topbar"><button class="icon-btn" data-back aria-label="Go back">←</button><div><p class="eyebrow">Thai Heaven</p><h1>${labels[state.screen]}</h1></div><button class="icon-btn" data-go="home-map" aria-label="Home">⌂</button></header>`;
-  const bottom = ['home-map', 'search', 'category', 'filters'].includes(state.screen) ? bottomNav() : '';
-  return `<div class="phone-shell"><div class="status"><span>21:08</span><span class="notch"></span><span>5G 84%</span></div>${topbar}<div class="screen">${content}</div>${bottom}</div>`;
+function frame(content, modal = '') {
+  const nav = ['home-map', 'category', 'my'].includes(state.currentView) ? bottomNav() : '';
+  return `<div class="device"><div class="safe"><div class="status"><span>21:08</span><b>Thai Heaven</b><span>5G</span></div>${content}${nav}${modal}</div></div>`;
 }
+function view(id, label, body, extra = '') { return `<section class="vw ${extra}" data-view="${id}" data-screen-label="${id}" aria-label="${label}">${body}</section>`; }
+function top(title, sub = '編集部キュレーション') { return `<header class="top"><button class="stamp mini" data-back>⌫</button><div><p class="mono">${sub}</p><h1>${title}</h1></div><button class="stamp mini" data-demo="共有しました">↗</button></header>`; }
+function ph(tone = 'v1', text = '') { return `<div class="ph ${tone}"><span>${text}</span></div>`; }
 
-function splash() { return `<section class="splash"><div class="halo"></div><div class="brand-mark">TH</div><p class="eyebrow">mobile nightlife concierge</p><h2>Thai Heaven</h2><p class="lede">Find verified venues, compare vibes, select your companions, and move the plan to LINE in seconds.</p><button class="primary pulse" data-go="onboarding">Enter Bangkok ${icon('›')}</button></section>`; }
-function onboarding() { return `<section class="content"><div class="poster">${icon('✦')}<h2>Choose your night mode</h2><p>Safety-first recommendations with zine-style neon energy and one-hand mobile controls.</p></div><div class="chips"><button class="chip active">First time in Bangkok</button><button class="chip">VIP focused</button><button class="chip">Budget walk-in</button></div><div class="card"><p class="label">Accent color token</p><div class="swatches">${['#ff2fb2','#ff3b30','#ffc400','#24d6ff'].map(c => `<button class="swatch" style="background:${c};outline:${state.hot === c ? '2px solid white' : '0'}" data-hot="${c}" aria-label="Set accent ${c}"></button>`).join('')}</div></div><button class="primary" data-go="home-map">Show map ${icon('⌖')}</button></section>`; }
-function homeMap() { return `<section class="content map-page"><div class="map"><div class="grid"></div>${[1,2,3].map(i => `<button class="pin pin-${i}" data-go="venue">⌖</button>`).join('')}<div class="map-card"><p class="eyebrow">Live district heat</p><h2>Nana → Cowboy → Thonglor</h2><p>12 verified spots are hot now. Tap a marker or refine the route.</p></div></div><div class="action-row"><button class="secondary" data-go="search">${icon('⌕')}Search</button><button class="secondary" data-go="filters">${icon('≛')}Filters</button></div>${venueList()}</section>`; }
-function venueList() { return `<div class="stack">${venues.map(v => `<button class="venue-card" data-go="venue"><div class="thumb gradient"><span>${v.name.slice(0,2)}</span></div><div class="venue-info"><div class="spread"><h3>${v.name}</h3><span class="rating">★ ${v.score}</span></div><p>${v.type} · ${v.area} · ${v.dist}</p><div class="mini-tags">${v.tags.map(t => `<span>${t}</span>`).join('')}</div></div></button>`).join('')}</div>`; }
-function search() { return `<section class="content"><label class="search-box">${icon('⌕')}<input value="Nana premium VIP" aria-label="Search nightlife" /></label><div class="quick-grid">${['Open now','English OK','No pressure','Private room'].map(x => `<button class="quick">${x}</button>`).join('')}</div>${venueList()}</section>`; }
-function category() { return `<section class="content"><div class="hero-strip">${icon('◈')}<h2>Pick by category</h2><p>Each lane keeps the same tokenized neon accent and hard-shadow zine cards.</p></div><div class="category-grid">${categories.map(([name, desc, count]) => `<button data-go="venue"><h3>${name}</h3><p>${desc}</p><span>${count}</span></button>`).join('')}</div></section>`; }
-function filters() { return `<section class="content"><div class="filter-card">${icon('≛')}<h2>Night filters</h2>${['Verified venues only','Open after midnight','LINE booking available','Multiple host request','Japanese / English support'].map((x, i) => `<label class="toggle"><span>${x}</span><input type="checkbox" ${i < 3 ? 'checked' : ''}/></label>`).join('')}</div><div class="range"><span>Budget</span><strong>฿฿ — ฿฿฿฿</strong><div class="rangebar"><i></i></div></div><button class="primary" data-go="venue">Apply filters ${icon('›')}</button></section>`; }
-function venue() { return `<section class="content venue-page"><div class="venue-hero"><div><p class="eyebrow">Verified tonight</p><h2>Lotus Noir</h2><p>Nana Plaza · neon stage club · 0.4 km</p></div><span class="score">★ 4.8</span></div><div class="tabs">${['overview','menu','reviews'].map(tab => `<button class="${state.tab === tab ? 'active' : ''}" data-tab="${tab}">${tab}</button>`).join('')}</div>${venueTab()}<button class="primary sticky" data-go="venue-roster">Choose companions ${icon('♚')}</button></section>`; }
-function venueTab() { if (state.tab === 'menu') return `<div class="stack"><div class="menu-row"><span>Lady drink</span><b>฿220+</b></div><div class="menu-row"><span>VIP sofa set</span><b>฿3,900</b></div><div class="menu-row"><span>Airport pickup add-on</span><b>Quote</b></div></div>`; if (state.tab === 'reviews') return `<div class="stack">${['Smooth LINE booking and no surprise fees.','Best lighting and music near Nana.','Staff helped translate everything politely.'].map((r, i) => `<div class="review"><b>${'★'.repeat(5 - i % 2)}</b><p>${r}</p></div>`).join('')}</div>`; return `<div class="stack"><div class="card"><h3>Tonight brief</h3><p>High-energy stage, attentive mamasan desk, and VIP sofa availability. Best for guests who want a guided first stop.</p></div><div class="metrics"><span>◷ Open until 03:00</span><span>✓ ID checked</span><span>▣ Cards OK</span></div><button class="secondary full" data-go="line">${icon('◌')}Ask venue on LINE</button></div>`; }
-function rosterScreen() { return `<section class="content"><div class="roster-head"><h2>Multi-select hosts</h2><p>${state.selected.length} selected · request exact lineup or nearest available match.</p></div><div class="roster-grid">${roster.map(hostCard).join('')}</div><div class="action-row"><button class="secondary" data-go="profile">View profile</button><button class="primary" data-go="line">Continue ${icon('›')}</button></div></section>`; }
-function hostCard(girl) { const selected = state.selected.includes(girl.id); return `<button class="host ${selected ? 'selected' : ''}" data-toggle="${girl.id}"><div class="portrait" style="--a:${girl.accent}"><span>${girl.name[0]}</span>${selected ? '<i>✓</i>' : ''}</div><h3>${girl.name}, ${girl.age}</h3><p>${girl.style}</p><span>${girl.lang} · ${girl.rate}</span></button>`; }
-function profile() { const girl = roster[0]; return `<section class="content"><div class="profile-poster"><div class="portrait large" style="--a:${girl.accent}"><span>${girl.name[0]}</span></div><h2>${girl.name}</h2><p>Playful host · Thai / English · available from 21:30</p></div><div class="card"><h3>Guest notes</h3><p>Enjoys upbeat pop, easy conversation, and helps first-time visitors understand venue etiquette.</p></div><button class="secondary full" data-toggle="${girl.id}">${state.selected.includes(girl.id) ? 'Remove from lineup' : 'Add to lineup'}</button><button class="primary" data-go="line">Request on LINE ${icon('◌')}</button></section>`; }
-function line() { const names = chosen().map(c => c.name).join(', ') || 'staff recommendation'; return `<section class="content"><div class="line-card">${icon('◌')}<h2>LINE request ready</h2><p>We generated a clean message with venue, time, selected hosts, and budget guardrails.</p><div class="message">Hi Lotus Noir, I’d like to visit tonight around 22:00. Requested hosts: ${names}. Please confirm availability and total estimate.</div></div><button class="primary" data-go="booking">Reserve inside app ${icon('◷')}</button><button class="secondary full">Open LINE placeholder</button></section>`; }
-function booking() { return `<section class="content"><div class="card"><h2>Reservation details</h2>${[['Date','Tonight'],['Arrival','22:00'],['Guests','2 guests'],['Lineup', chosen().map(c => c.name).join(', ')]].map(([k,v]) => `<label class="field">${k}<input value="${v}" ${k === 'Lineup' ? 'readonly' : ''}/></label>`).join('')}</div><div class="notice">${icon('!')}No payment captured. Venue confirms on LINE before arrival.</div><button class="primary" data-go="confirmation">Send request ${icon('›')}</button></section>`; }
-function confirmation() { const names = chosen().map(c => c.name).join(', ') || 'venue recommendation'; return `<section class="content confirm"><div class="success">${icon('✓')}<h2>Request sent</h2><p>Lotus Noir received your preferred lineup: ${names}.</p></div><div class="card"><h3>Next steps</h3><p>Watch LINE for final availability, meet at the mamasan desk, and keep the quote in chat.</p></div><button class="primary" data-go="home-map">Back to map ${icon('⌖')}</button></section>`; }
-function bottomNav() { const items = [['home-map','⌖','Map'],['search','⌕','Search'],['category','✦','Vibes'],['filters','≛','Filter']]; return `<nav class="bottom-nav">${items.map(([id, ic, label]) => `<button class="${state.screen === id ? 'active' : ''}" data-go="${id}"><span>${ic}</span><span>${label}</span></button>`).join('')}</nav>`; }
+function splash() {
+  return view('splash', '01 splash', `<div class="splash-art"><div class="seal">天</div><p class="mono">BANGKOK NIGHTLIFE GUIDE</p><h1>Thai<br>Heaven</h1></div><div class="gate"><p class="kicker">18+ AGE GATE</p><h2>成人向けナイトライフ情報を表示します</h2><p>各国法令・店舗ルールを確認し、自己責任で利用してください。</p><button class="cta" data-age>同意して入る</button><button class="ghost" data-exit>退出</button></div>`, 'splash');
+}
+function onboarding() {
+  const step = state.onbStep;
+  const body = `<div class="onb-head"><p class="mono">STEP ${step}/3</p><div class="segments">${[1,2,3].map((n) => `<i class="seg ${n <= step ? 'on' : ''}"></i>`).join('')}</div></div>${step === 1 ? onbGenres() : step === 2 ? onbAreas() : onbNotify()}<footer class="onb-actions"><button class="ghost" data-onb="${step === 1 ? 'skip' : 'prev'}">${step === 1 ? 'スキップ' : '戻る'}</button><button class="cta" data-onb="${step === 3 ? 'finish' : 'next'}">${step === 3 ? 'はじめる' : '次へ'}</button></footer>`;
+  return view('onboarding', '02 onboarding', body);
+}
+function onbGenres() { return `<h1>関心ジャンル</h1><p class="lead">複数選択できます。選択チップは朱地+チェックで反映します。</p><div class="card-grid">${genreCards.map(([id, label]) => `<button class="pick ${state.interests.includes(id) ? 'sel' : ''}" data-chip="interest:${id}"><b>${label}</b><span>${state.interests.includes(id) ? '✓' : '+'}</span></button>`).join('')}</div>`; }
+function onbAreas() { return `<h1>行きたいエリア</h1><p class="lead">エリア選択はtealで強調します。</p><div class="card-grid">${areaCards.map((area) => `<button class="pick area ${state.areas.includes(area) ? 'sel' : ''}" data-chip="area:${area}"><b>${area}</b><span>${state.areas.includes(area) ? '✓' : '+'}</span></button>`).join('')}</div>`; }
+function onbNotify() { return `<h1>通知設定</h1><p class="lead">編集部ピックと近くのおすすめだけを通知します。</p>${[['editorPick','編集部ピック速報'], ['nearby','近くのおすすめ']].map(([key,label]) => `<label class="switch-row"><span>${label}</span><input type="checkbox" data-notify="${key}" ${state.notifyPrefs[key] ? 'checked' : ''}></label>`).join('')}`; }
 
-const screens = { splash, onboarding, 'home-map': homeMap, search, category, filters, venue, 'venue-roster': rosterScreen, profile, line, booking, confirmation };
+function homeMap() {
+  const sheetClass = state.mapSheetExpanded ? 'expanded' : '';
+  return view('home-map', '03 home-map', `<div class="map-top"><button class="search-pill" data-go="search">⌕ Soi Cow</button><button class="stamp" data-go="filter">絞</button></div><div class="chips"><button>出勤中</button><button>日本語OK</button><button>฿฿</button><button>編集部</button></div><div class="map-canvas"><span class="city nana">NANA</span><span class="city cowboy">SOI COWBOY</span><span class="city thonglor">THONGLOR</span><button class="pin hot" data-go="venue-overview">天</button><button class="pin teal" data-go="venue-overview">酒</button><button class="pin gold" data-go="venue-overview">PR</button><i class="me"></i></div><section id="mapSheet" class="map-sheet ${sheetClass}"><button class="handle" data-sheet><span></span><b>編集部推薦 12件</b></button><div class="sheet-more"><div class="stats"><b>4.6★<small>平均</small></b><b>38<small>在籍</small></b><b>03:00<small>深夜</small></b></div><div class="toolbar"><span>近い順</span><button data-go="filter">＋条件</button></div>${venueList()}</div></section>`);
+}
+function venueList() { return `<div class="venue-list">${venues.map((venue, index) => `<button class="venue-row" data-go="venue-overview">${ph(index === 1 ? 'v2' : index === 2 ? 'v3' : 'v1', venue.name[0])}<div><p class="mono">${venue.area} / ${venue.category}</p><h3>${venue.name}</h3><span>★${venue.rating} · ${venue.price} · ${venue.tags.join(' / ')}</span></div></button>`).join('')}</div>`; }
+function search() { return view('search', '05 search', `${top('検索', 'SEARCH')}<button class="searchbar active" data-go="search-input">⌕ <span>${state.searchQuery}</span><i></i></button><h2>店舗候補</h2>${venueList()}<h2>エリア候補</h2><div class="chips big">${areaCards.map((area) => `<button data-go="category">${area}</button>`).join('')}</div><h2>最近の検索</h2><div class="chips big"><button>日本語OK</button><button>明朗会計</button><button>送迎</button></div>`); }
+function searchInput() { return view('search-input', '04 search-input', `${top('検索入力中', 'MODAL-LIKE')}<label class="searchbar input">⌕ <input value="${state.searchQuery}" autofocus></label><p class="lead">入力中の候補を即時表示する想定です。</p>${venueList()}`); }
+function category() { return view('category', '06 category', `${top('カテゴリ一覧', 'CATEGORY')}<div class="cat-hero"><p class="mono">GO-GO / MASSAGE / KARAOKE</p><h1>夜の目的から探す</h1><span>適用中: ${state.filters.area.join('・')} <button data-go="filter">＋</button></span></div><div class="filter-tags">${state.filters.features.map((tag) => `<button data-filter-remove="${tag}">${tag} ×</button>`).join('')}</div><div class="cat-list">${categories.map(([name,count,desc], i) => i === 4 ? `<article class="ad-inline"><p>PR</p><b>Siam Velvet</b><span>編集部タイアップ枠 / 条件確認済み</span></article><button class="cat-row" data-go="venue-overview"><b>${name}</b><span>${count}</span><small>${desc}</small></button>` : `<button class="cat-row" data-go="venue-overview"><b>${name}</b><span>${count}</span><small>${desc}</small></button>`).join('')}</div>`); }
+function filterModal() { return view('filter', '07 filter', `${top('絞り込み', 'FILTER')}<div class="filter-sheet"><h2>エリア</h2><div class="chips big">${areaCards.map((area) => `<button class="${state.filters.area.includes(area) ? 'on' : ''}" data-filter-area="${area}">${area}</button>`).join('')}</div><h2>特徴</h2><div class="chips big">${['日本語OK','出勤中','明朗会計','送迎','カード可'].map((item) => `<button class="${state.filters.features.includes(item) ? 'on' : ''}" data-filter-feature="${item}">${item}</button>`).join('')}</div><h2>価格</h2><div class="price-slider"><i></i><b></b><b></b></div><h2>評価</h2><div class="chips big"><button class="on">4.0+</button><button>4.3+</button><button>4.5+</button></div><button class="cta" data-back>12件で絞り込む</button><button class="ghost" data-reset-filter>リセット</button></div>`, 'modal'); }
+
+function venueShell(inner, active = 'overview') {
+  return `${top('Lotus Noir', 'NANA PLAZA')}<div class="hero">${ph('v1', '天')}<div class="badge">編集部ピック</div><button class="save ${state.savedVenues.includes('lotus') ? 'on' : ''}" data-save-toggle>♥</button><button class="share" data-demo="共有しました">↗</button><span class="counter">1/8</span></div><div class="venue-title"><h1>Lotus Noir</h1><p>Nana Plaza · ★4.6 · ${venues[0].price}</p></div><nav class="venue-tabs">${[['overview','概要','venue-overview'],['roster','在籍','venue-roster'],['reviews','口コミ','venue-reviews'],['map','地図','home-map']].map(([id,label,viewId]) => `<button class="${active === id ? 'on' : ''}" data-vtab="${viewId}" data-go="${viewId}">${label}</button>`).join('')}</nav>${inner}<button class="line-cta" data-go="line">LINEで店舗に送る</button>`;
+}
+function venueOverview() { const venue = venues[0]; return view('venue-overview', '08 venue-overview', venueShell(`<div class="specs">${[['営業',venue.hours],['在籍',`${venue.girls}名`],['予算',venue.budget],['バーF',venue.barFine],['言語','日本語/英語'],['支払',venue.pay]].map(([k,v]) => `<span><b>${k}</b><em>${v}</em></span>`).join('')}</div><article class="note"><p class="kicker">編集部ノート</p><h2>初回でも迷いにくい、王道の一軒。</h2><p>入口で希望を伝えやすく、料金確認もLINEテンプレで残せる。週末は22時前の連絡推奨。</p></article>`, 'overview')); }
+function venueRoster() { return view('venue-roster', '09 venue-roster', venueShell(`<div class="chips"><button>全員</button><button>出勤中</button><button>日本語</button><button>年齢</button></div><div class="girl-grid">${girls.map((girl) => `<button class="girl ${state.selectedGirls.has(girl.id) ? 'sel' : ''}" data-girl="${girl.id}">${ph(girl.tone, girl.name[0])}<span class="badge2">${girl.badge}</span><b>${girl.name} / ${girl.age}</b><small>${girl.height}cm · ${girl.lang}</small><i>${state.selectedGirls.has(girl.id) ? '✓' : '+'}</i></button>`).join('')}</div><button class="roster-cta" data-go="line">▶ ${state.selectedGirls.size}名でLINE <small>${selectedNames().join(' / ') || '未選択'}</small></button>`, 'roster')); }
+function venueReviews() { return view('venue-reviews', '10 venue-reviews', venueShell(`<div class="review-summary"><b>4.6</b>${['接客','明朗会計','嬢のレベル','コスパ'].map((label, i) => `<span>${label}<i style="width:${88 - i * 9}%"></i></span>`).join('')}</div>${['初訪問でも説明が明確で安心。', '指名の確認がLINEに残るのが便利。'].map((text, i) => `<article class="review"><div class="avatar">${i + 1}</div><div><p><b>${i ? 'Bangkok 3回目' : '初タイ旅行'}</b> · ★★★★★</p><p>${text}</p><small>編集部返信: 料金確認は必ず入店前に。</small></div></article>`).join('')}<button class="ghost full" data-demo="口コミ投稿はデモです">＋書く</button>`, 'reviews')); }
+function line() { return view('line', '11 line', `${top('LINE 引き継ぎ', 'ONLINE')}<div class="line-ui"><div class="line-head"><b>Thai Heaven 編集部</b><span>online</span></div><div class="bubbles">${state.lineThread.map((msg) => `<p class="bubble ${msg.who}">${msg.text.replaceAll('\n','<br>')}</p>`).join('')}</div><div class="quick-replies">${['空席確認','日本語スタッフ','送迎','領収書'].map((text) => `<button data-line-chip="${text}">${text}</button>`).join('')}</div></div>`); }
+function my() { return view('my', '12 my', `${top('マイ', 'SAVED / HISTORY')}<div class="profile"><div class="avatar">天</div><div><h1>Guest Editor</h1><p>保存 ${state.savedVenues.length} · 予約 2 · 口コミ 1</p></div></div><div class="my-tabs"><button class="on">保存</button><button>履歴</button><button>口コミ</button><button>設定</button></div><h2>行く予定</h2>${venueList()}<h2>気になる</h2><button class="venue-row" data-go="venue-overview">${ph('v2', '酒')}<div><p class="mono">Thonglor / Member Parlor</p><h3>Siam Velvet</h3><span>PR · 送迎相談</span></div></button>`); }
+function bottomNav() { return `<nav class="bottom-nav"><button class="${state.currentView === 'home-map' ? 'on' : ''}" data-nav="home-map">地図</button><button class="${state.currentView === 'category' ? 'on' : ''}" data-nav="category">カテゴリ</button><button data-demo="保存リストを表示">保存</button><button class="${state.currentView === 'my' ? 'on' : ''}" data-nav="my">マイ</button></nav>`; }
+
+const renderers = { splash, onboarding, 'home-map': homeMap, search, 'search-input': searchInput, category, filter: filterModal, 'venue-overview': venueOverview, 'venue-roster': venueRoster, 'venue-reviews': venueReviews, line, my };
 function render() {
-  document.documentElement.style.setProperty('--hot', state.hot);
-  document.getElementById('app').innerHTML = shell(screens[state.screen]());
-  document.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => go(el.dataset.go)));
+  app.innerHTML = frame(renderers[state.currentView]());
+  bind();
+}
+function bind() {
+  document.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => route(el.dataset.go)));
+  document.querySelectorAll('[data-nav]').forEach((el) => el.addEventListener('click', () => route(el.dataset.nav)));
   document.querySelectorAll('[data-back]').forEach((el) => el.addEventListener('click', back));
-  document.querySelectorAll('[data-toggle]').forEach((el) => el.addEventListener('click', () => toggle(el.dataset.toggle)));
-  document.querySelectorAll('[data-tab]').forEach((el) => el.addEventListener('click', () => setTab(el.dataset.tab)));
-  document.querySelectorAll('[data-hot]').forEach((el) => el.addEventListener('click', () => setHot(el.dataset.hot)));
+  document.querySelectorAll('[data-age]').forEach((el) => el.addEventListener('click', () => { state.ageVerified = true; route('onboarding'); }));
+  document.querySelectorAll('[data-exit]').forEach((el) => el.addEventListener('click', () => toast('デモ: OSホームへ戻る想定です')));
+  document.querySelectorAll('[data-demo]').forEach((el) => el.addEventListener('click', () => toast(el.dataset.demo)));
+  document.querySelectorAll('[data-onb]').forEach((el) => el.addEventListener('click', () => { const action = el.dataset.onb; if (action === 'finish' || action === 'skip') return route('home-map'); state.onbStep += action === 'next' ? 1 : -1; render(); }));
+  document.querySelectorAll('[data-chip]').forEach((el) => el.addEventListener('click', () => { const [kind, value] = el.dataset.chip.split(':'); state[kind === 'interest' ? 'interests' : 'areas'] = toggleIn(state[kind === 'interest' ? 'interests' : 'areas'], value); render(); }));
+  document.querySelectorAll('[data-notify]').forEach((el) => el.addEventListener('change', () => { state.notifyPrefs[el.dataset.notify] = el.checked; }));
+  document.querySelectorAll('[data-sheet]').forEach((el) => el.addEventListener('click', () => { state.mapSheetExpanded = !state.mapSheetExpanded; render(); }));
+  document.querySelectorAll('[data-girl]').forEach((el) => el.addEventListener('click', () => { const id = el.dataset.girl; state.selectedGirls.has(id) ? state.selectedGirls.delete(id) : state.selectedGirls.add(id); render(); }));
+  document.querySelectorAll('[data-save-toggle]').forEach((el) => el.addEventListener('click', () => { state.savedVenues = toggleIn(state.savedVenues, 'lotus'); render(); toast(state.savedVenues.includes('lotus') ? '保存しました' : '保存を解除しました'); }));
+  document.querySelectorAll('[data-filter-area]').forEach((el) => el.addEventListener('click', () => { state.filters.area = toggleIn(state.filters.area, el.dataset.filterArea); render(); }));
+  document.querySelectorAll('[data-filter-feature]').forEach((el) => el.addEventListener('click', () => { state.filters.features = toggleIn(state.filters.features, el.dataset.filterFeature); render(); }));
+  document.querySelectorAll('[data-filter-remove]').forEach((el) => el.addEventListener('click', () => { state.filters.features = state.filters.features.filter((item) => item !== el.dataset.filterRemove); render(); }));
+  document.querySelectorAll('[data-reset-filter]').forEach((el) => el.addEventListener('click', () => { state.filters = { area: [], features: [], priceRange: 'any', minRating: 0 }; render(); }));
+  document.querySelectorAll('[data-line-chip]').forEach((el) => el.addEventListener('click', () => addLineReply(el.dataset.lineChip)));
+}
+function addLineReply(text) {
+  state.lineThread.push({ who: 'me', text });
+  render();
+  setTimeout(() => { const replies = { '空席確認': '22:00は2名席あり。指名は入店前に再確認します。', '日本語スタッフ': '日本語スタッフは21:30以降にいます。', '送迎': '送迎はエリア次第で相談可能です。', '領収書': '領収書は店舗名義で発行可否を確認します。' }; state.lineThread.push({ who: 'shop', text: replies[text] || '確認します。' }); render(); }, 700);
 }
 
+document.addEventListener('keydown', (event) => { if (event.key === 'Backspace') back(); if (event.key.toLowerCase() === 'r') reset(); });
 render();
-window.ThaiHeaven = { ROUTES, go, state };
+window.ThaiHeaven = { ROUTES, state, go: route, back, reset };
