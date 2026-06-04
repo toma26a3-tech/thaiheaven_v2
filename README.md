@@ -1,6 +1,6 @@
 # Thai Heaven Mobile Frontend
 
-A dependency-free mobile web implementation of the Thai Heaven 12-view handoff. This revision mirrors the supplied prototype styling more closely: fixed dark stage, brand chrome, flow rail, 320×692 phone frame, JS-routed `.vw` views, paper screens, ink borders, hard offset shadows, editorial zine typography, map sheet, modal filter sheet, and LINE-style handoff.
+A dependency-free mobile web implementation of the Thai Heaven 12-view handoff. This revision mirrors the supplied prototype styling more closely: fixed dark stage, brand chrome, flow rail, 320×692 phone frame, persistent DOM `.vw` views controlled by a prototype-style JS router, paper screens, ink borders, hard offset shadows, editorial zine typography, map sheet, modal filter sheet, and LINE-style handoff.
 
 ## Run locally
 
@@ -35,7 +35,7 @@ The validation script confirms the app files exist, all 12 handoff routes are re
 
 ## State and interaction coverage
 
-The app keeps state for age verification, onboarding interests/areas/notifications, route history, saved venues, map sheet expansion, selected roster girls, LINE thread messages, search query, and filter selections. Keyboard shortcuts match the prototype: `Backspace` returns and `r` resets.
+The app keeps prototype state for route history, onboarding toggles, saved venue affordances, map sheet expansion, selected roster girls, visual filter chips, LINE thread messages, and My tabs. Keyboard shortcuts match the prototype: `Backspace` returns and `r` resets. The onboarding step function is exposed as `window.__onbStep`, and `window.ThaiHeaven` exposes the route helpers for inspection.
 
 ## Assets
 
